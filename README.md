@@ -126,9 +126,21 @@ VIEKO_SSH_DEPLOY_HOST=root@vieko.sh VIEKO_SSH_ADMIN_PORT=2200 ./deploy/deploy.sh
 ```
 
 Then point DNS `A`/`AAAA` for the `vieko.sh` apex at the box so `ssh vieko.sh`
-reaches the front door. Also add the same rules to the **Hetzner Cloud
-Firewall** for defense in depth, and consider restricting `:2200` to your own
-IP there.
+reaches the front door.
+
+Finally, add the **Hetzner Cloud Firewall** (network-edge layer, in front of
+nftables) so admin SSH is invisible to internet scanners:
+
+```sh
+hcloud context create vieko-ssh --token-from-env   # HCLOUD_TOKEN=<read-write token>
+ADMIN_SRC_V4=<your-ip>/32 ADMIN_SRC_V6=<your-ip6>/64 ./deploy/hcloud-firewall.sh
+```
+
+This opens `:22`/`:80`/`:443` to the world and restricts `:2200` to your
+source only. `:2222` is deliberately not exposed (the front door is `:22`; the
+`:22`->`:2222` DNAT happens on the box, after the edge firewall). If your admin
+source IP changes you can always recover via the Hetzner Console (edit the
+rule) or the server's VNC Console (bypasses the network firewall).
 
 Subsequent deploys are just:
 
