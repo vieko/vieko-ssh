@@ -35,8 +35,9 @@ const (
 	minVisibleRow = 3
 )
 
-// fixedChromeLines: blank + logo + blank + tagline + blank + header + blank + footer.
-var fixedChromeLines = 7 + len(content.LogoLines)
+// fixedChromeLines: blank + logo + blank + tagline + blank + header + blank +
+// footer + blank + status line.
+var fixedChromeLines = 9 + len(content.LogoLines)
 
 // Model is the Bubble Tea model for a single SSH session.
 type Model struct {
@@ -190,12 +191,15 @@ func (m Model) frame() string {
 		lines = append(lines, "")
 	}
 
-	// Status line (occupies the blank slot before the footer, keeping the
-	// total line count — and thus visibleRows math — stable).
-	lines = append(lines, m.statusLine(w))
-
-	// Footer hints.
+	// Blank separator, then footer hints.
+	lines = append(lines, "")
 	lines = append(lines, "  "+m.footer(w))
+
+	// Blank spacer, then the action/status line below the footer. The row is
+	// always reserved (empty when no action is active) so the layout — and
+	// thus visibleRows math — stays stable.
+	lines = append(lines, "")
+	lines = append(lines, m.statusLine(w))
 
 	return strings.Join(lines, "\n")
 }
@@ -205,7 +209,7 @@ func (m Model) statusLine(w int) string {
 		return ""
 	}
 	prefix := "\u2197 " // ↗
-	suffix := "  \u00b7  \u2318/ctrl-click or copy"
+	suffix := "  \u00b7  cmd/ctrl-click or copy"
 	// Budget the URL so the whole line fits.
 	budget := w - runewidth.StringWidth(prefix) - runewidth.StringWidth(suffix)
 	if budget < 8 {

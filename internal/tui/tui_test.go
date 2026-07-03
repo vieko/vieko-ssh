@@ -1,11 +1,16 @@
 package tui
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/mattn/go-runewidth"
 )
+
+var ansiRE = regexp.MustCompile("\x1b\\][0-9];;[^\x1b]*\x1b\\\\|\x1b\\[[0-9;?]*[A-Za-z]")
+
+func stripANSI(s string) string { return ansiRE.ReplaceAllString(s, "") }
 
 func TestTruncate(t *testing.T) {
 	cases := []struct {
@@ -50,6 +55,49 @@ func TestSplitRowTruncatesLongTitle(t *testing.T) {
 	}
 	if !strings.HasSuffix(left, "\u2026") {
 		t.Errorf("expected truncated title to end with ellipsis, got %q", left)
+	}
+}
+
+func TestStatusLineBelowFooter(t *testing.T) {
+	m := Model{width: 100, height: 30, status: "https://vieko.dev/say-no"}
+	lines := strings.Split(m.frame(), "\n")
+
+	footerIdx, statusIdx := -1, -1
+	for i, ln := range lines {
+		plain := stripANSI(ln)
+		if strings.Contains(plain, "Enter open") && strings.Contains(plain, "quit") {
+			footerIdx = i
+		}
+		if strings.Contains(plain, "cmd/ctrl-click or copy") {
+			statusIdx = i
+		}
+	}
+
+	if footerIdx == -1 {
+		t.Fatal("footer line not found")
+	}
+	if statusIdx == -1 {
+		t.Fatal("status line not found")
+	}
+	if statusIdx <= footerIdx {
+		t.Fatalf("status (%d) should be below footer (%d)", statusIdx, footerIdx)
+	}
+	if statusIdx-footerIdx != 2 {
+		t.Fatalf("expected exactly one blank line between footer (%d) and status (%d)", footerIdx, statusIdx)
+	}
+	if blank := stripANSI(lines[footerIdx+1]); strings.TrimSpace(blank) != "" {
+		t.Fatalf("line between footer and status should be blank, got %q", blank)
+	}
+	if statusIdx != len(lines)-1 {
+		t.Fatalf("status line should be last (idx %d of %d)", statusIdx, len(lines))
+	}
+}
+
+func TestStatusLineEmptyWhenNoAction(t *testing.T) {
+	m := Model{width: 100, height: 30}
+	lines := strings.Split(m.frame(), "\n")
+	if got := stripANSI(lines[len(lines)-1]); strings.TrimSpace(got) != "" {
+		t.Fatalf("last line should be empty with no action, got %q", got)
 	}
 }
 
