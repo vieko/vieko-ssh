@@ -37,7 +37,7 @@ go run .
 ssh localhost -p 2222
 ```
 
-Config via env: `VIEKO_SSH_HOST` (default `0.0.0.0`), `VIEKO_SSH_PORT`
+Config via env: `VIEKO_SSH_HOST` (default `::`, dual-stack), `VIEKO_SSH_PORT`
 (default `2222`), `VIEKO_SSH_HOST_KEY` (default `.ssh/id_ed25519`, generated on
 first run).
 
@@ -49,6 +49,45 @@ internal/content/           the data — hand-mirrored from vieko.dev
 internal/tui/               bubbletea model (port of vieko-cli's render loop)
 deploy/                     systemd unit, nftables ruleset, deploy script
 ```
+
+## Architecture
+
+Three things share one small box behind one domain. The SSH TUI is the point;
+the web redirect and admin SSH are along for the ride.
+
+```
+                        ssh vieko.sh                 https://vieko.sh
+                            │                              │
+                            ▼                              ▼
+                  ┌───────────────────────────────────────────────┐
+                  │        Hetzner Cloud Firewall (edge)           │
+                  │  :22, :80, :443  → anyone                      │
+                  │  :2200 (admin)   → one allowlisted source only │
+                  └───────────────────────────────────────────────┘
+                            │            │              │
+                    :22     │      :80/:443             │ :2200
+                            ▼            ▼              ▼
+                  ┌───────────────────────────────────────────────┐
+                  │   the box: nftables (default-drop) + services  │
+                  │                                                │
+                  │   :22 ──DNAT──▶ :2222   vieko-ssh (wish/tea)   │
+                  │   :80/:443 ───────────▶ Caddy → vieko.dev      │
+                  │   :2200 ──────────────▶ OpenSSH (key-only)     │
+                  └───────────────────────────────────────────────┘
+```
+
+**Request paths**
+- **Visitor** (`ssh vieko.sh`): edge allows `:22` → box's nftables DNATs
+  `:22`→`:2222` → the `vieko-ssh` service renders the TUI. The app binds a high
+  port so it never needs root or `CAP_NET_BIND_SERVICE`; the privileged port
+  `:22` is just a redirect, not a listener.
+- **Web** (`https://vieko.sh`): edge allows `:80`/`:443` → Caddy 302-redirects
+  to `vieko.dev` (path preserved) with an auto-renewing Let's Encrypt cert.
+- **Admin** (`ssh -p 2200`): edge allows `:2200` only from one source → OpenSSH,
+  key-only. Moved off `:22` so the front door is free for the TUI redirect.
+
+All three are dual-stack (IPv4 + IPv6). Nothing here is a secret — see the
+threat model below for why that's fine.
 
 ## Security posture
 
@@ -102,6 +141,31 @@ matters when the input is anonymous and adversarial. `ssh2` is a fine,
 single-maintainer pure-JS library, but its risk surface (a history of
 crash-on-malformed-input issues, one process serving everyone) is a poorer fit
 for this specific threat model.
+
+### Threat model — why this repo is safe to open-source
+
+The design is fully public on purpose. Security here follows Kerckhoffs's
+principle: **knowing exactly how it's built shouldn't help you break in.** What
+actually protects it lives *outside* this repo:
+
+- **The SSH host + user keys** (gitignored; the host key is generated on the box
+  at first run and never leaves it).
+- **The admin allowlist** — `:2200` is reachable only from one source IP at the
+  cloud edge, and even then it's key-only (passwords off). The *port number*
+  isn't a secret and doesn't need to be; the allowlist and the key are the lock.
+- **The Hetzner API token** — never committed; lives in local `hcloud` config /
+  a password manager, and is revocable.
+
+So what an attacker learns from this repo is the *shape* of the system, which is
+intentionally boring: an anonymous, read-only TUI with no shell, no `exec`, no
+filesystem, no forwarding, one hardened process behind default-drop firewalls.
+There's no credential, IP allowlist entry, or private key to find here, and no
+control relies on you *not* knowing the architecture.
+
+The deploy files (`deploy/`) are the author's actual setup *shape*, not a
+turn-key drop-in. If you fork this, bring your own domain, keys, admin source
+IP, and — since there's no reason to reuse mine — your own admin port. None of
+the security depends on those specific values.
 
 ## Deploy to Hetzner
 
