@@ -22,7 +22,7 @@ Group=vieko-ssh
 WorkingDirectory=/var/lib/vieko-ssh
 ExecStart=/usr/local/bin/vieko-ssh
 
-Environment=VIEKO_SSH_HOST=0.0.0.0
+Environment=VIEKO_SSH_HOST=::
 Environment=VIEKO_SSH_PORT=2222
 Environment=VIEKO_SSH_HOST_KEY=/var/lib/vieko-ssh/.ssh/id_ed25519
 

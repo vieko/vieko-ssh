@@ -43,7 +43,7 @@ import (
 )
 
 func main() {
-	host := env("VIEKO_SSH_HOST", "0.0.0.0")
+	host := env("VIEKO_SSH_HOST", "::") // dual-stack (v4+v6) by default
 	port := env("VIEKO_SSH_PORT", "2222")
 	hostKey := env("VIEKO_SSH_HOST_KEY", ".ssh/id_ed25519")
 
