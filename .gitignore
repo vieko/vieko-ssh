@@ -1,0 +1,16 @@
+# binaries
+/vieko-ssh
+/dist/
+*.exe
+
+# host keys / secrets — never commit these
+.ssh/
+*.pem
+id_ed25519*
+
+# local test/scratch
+*.out
+*.log
+
+# os
+.DS_Store

@@ -1,0 +1,70 @@
+# Hardened systemd unit for vieko-ssh.
+#
+# Install:
+#   sudo useradd --system --home /var/lib/vieko-ssh --create-home \
+#     --shell /usr/sbin/nologin vieko-ssh
+#   sudo install -m0755 vieko-ssh /usr/local/bin/vieko-ssh
+#   sudo install -m0644 deploy/vieko-ssh.service /etc/systemd/system/vieko-ssh.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now vieko-ssh
+#
+# The host key is generated on first start in /var/lib/vieko-ssh/.ssh and
+# persists across restarts so clients don't get host-key-changed warnings.
+
+[Unit]
+Description=vieko-ssh — vieko.dev one-pager over SSH
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vieko-ssh
+Group=vieko-ssh
+WorkingDirectory=/var/lib/vieko-ssh
+ExecStart=/usr/local/bin/vieko-ssh
+
+Environment=VIEKO_SSH_HOST=0.0.0.0
+Environment=VIEKO_SSH_PORT=2222
+Environment=VIEKO_SSH_HOST_KEY=/var/lib/vieko-ssh/.ssh/id_ed25519
+
+# Restart policy — the whole point of a supervised daemon. If a single crafted
+# session ever panics past the recover middleware and takes the process down,
+# come right back; the start-limit prevents a hot crash loop.
+Restart=on-failure
+RestartSec=2
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# --- sandboxing -------------------------------------------------------------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/vieko-ssh
+PrivateTmp=true
+PrivateDevices=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+# Binds a high port (2222), so no privileges/capabilities are needed at all.
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+# --- resource limits (blunt DoS containment) --------------------------------
+MemoryMax=256M
+TasksMax=512
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
