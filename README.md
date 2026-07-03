@@ -3,7 +3,7 @@
 The [vieko.dev](https://vieko.dev) one-pager, served over SSH.
 
 ```
-ssh vieko.dev
+ssh vieko.sh
 ```
 
 Browse recent writing without leaving the terminal — no install, just `ssh`.
@@ -122,17 +122,18 @@ sudo cp deploy/nftables.conf /etc/nftables.conf
 sudo systemctl enable --now nftables
 
 # 3. First deploy (builds, uploads, installs the unit, starts it)
-VIEKO_SSH_DEPLOY_HOST=you@vieko.dev VIEKO_SSH_ADMIN_PORT=2200 ./deploy/deploy.sh
+VIEKO_SSH_DEPLOY_HOST=root@vieko.sh VIEKO_SSH_ADMIN_PORT=2200 ./deploy/deploy.sh
 ```
 
-Then point DNS `A`/`AAAA` for `vieko.dev` (or a subdomain) at the box. Also add
-the same rules to the **Hetzner Cloud Firewall** for defense in depth, and
-consider restricting `:2200` to your own IP there.
+Then point DNS `A`/`AAAA` for the `vieko.sh` apex at the box so `ssh vieko.sh`
+reaches the front door. Also add the same rules to the **Hetzner Cloud
+Firewall** for defense in depth, and consider restricting `:2200` to your own
+IP there.
 
 Subsequent deploys are just:
 
 ```sh
-VIEKO_SSH_DEPLOY_HOST=you@vieko.dev ./deploy/deploy.sh
+VIEKO_SSH_DEPLOY_HOST=root@vieko.sh ./deploy/deploy.sh
 ```
 
 ## Updating content
