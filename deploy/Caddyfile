@@ -1,0 +1,19 @@
+# Caddy config for the box: a vanity redirect from the vieko.sh apex to the
+# real site at vieko.dev, with the path preserved (so vieko.sh/say-no ->
+# vieko.dev/say-no). Caddy auto-provisions and renews TLS via Let's Encrypt.
+#
+# SSH is the main event on this box (:22 -> :2222); this just keeps
+# https://vieko.sh from being a dead link.
+#
+# Install:
+#   sudo install -m0644 deploy/Caddyfile /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+# Requires :80 and :443 open (see deploy/nftables.conf) for serving + ACME.
+
+{
+	email hello@vieko.dev
+}
+
+vieko.sh {
+	redir https://vieko.dev{uri}
+}
