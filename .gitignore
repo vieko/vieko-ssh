@@ -3,7 +3,7 @@
 /dist/
 *.exe
 
-# host keys / secrets — never commit these
+# host keys / secrets (never commit these)
 .ssh/
 *.pem
 id_ed25519*

@@ -2,7 +2,7 @@
 //
 // This is hand-mirrored from vieko.dev's src/lib/posts.ts (and kept in sync
 // with the sibling vieko-cli package). There is intentionally no build step or
-// fetch dependency on the site — update POSTS by hand when new writing ships.
+// fetch dependency on the site. Update POSTS by hand when new writing ships.
 package content
 
 const (

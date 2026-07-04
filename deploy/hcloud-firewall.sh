@@ -14,7 +14,7 @@
 #
 # ADMIN_SRC_* is where YOU connect admin SSH from. Here it's the VPN egress
 # (egress-pdx). If that IP ever changes you'll lose :2200 until you update the
-# rule — recover via the Hetzner Console (edit rule) or the server's VNC
+# rule. Recover via the Hetzner Console (edit rule) or the server's VNC
 # Console (bypasses the network firewall entirely).
 set -euo pipefail
 
@@ -39,7 +39,7 @@ else
 	hcloud firewall add-rule "$FW" --direction in --protocol tcp --port 2200 --source-ips "$ADMIN_SRC_V4"
 fi
 
-# NOTE: :2222 is intentionally NOT exposed — the front door is :22, and the
+# NOTE: :2222 is intentionally NOT exposed. The front door is :22, and the
 # box's internal DNAT (:22 -> :2222) happens after this firewall.
 # Outbound is left unset => Hetzner allows all egress (needed for apt/ACME).
 

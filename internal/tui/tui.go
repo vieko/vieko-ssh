@@ -196,8 +196,8 @@ func (m Model) frame() string {
 	lines = append(lines, "  "+m.footer(w))
 
 	// Blank spacer, then the action/status line below the footer. The row is
-	// always reserved (empty when no action is active) so the layout — and
-	// thus visibleRows math — stays stable.
+	// always reserved (empty when no action is active) so the layout (and
+	// thus visibleRows math) stays stable.
 	lines = append(lines, "")
 	lines = append(lines, m.statusLine(w))
 

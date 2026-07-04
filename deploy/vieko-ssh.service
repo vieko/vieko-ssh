@@ -11,7 +11,7 @@
 # persists across restarts so clients don't get host-key-changed warnings.
 
 [Unit]
-Description=vieko-ssh — vieko.dev one-pager over SSH
+Description=vieko-ssh: vieko.dev one-pager over SSH
 After=network-online.target
 Wants=network-online.target
 
@@ -26,7 +26,7 @@ Environment=VIEKO_SSH_HOST=::
 Environment=VIEKO_SSH_PORT=2222
 Environment=VIEKO_SSH_HOST_KEY=/var/lib/vieko-ssh/.ssh/id_ed25519
 
-# Restart policy — the whole point of a supervised daemon. If a single crafted
+# Restart policy. The whole point of a supervised daemon. If a single crafted
 # session ever panics past the recover middleware and takes the process down,
 # come right back; the start-limit prevents a hot crash loop.
 Restart=on-failure
