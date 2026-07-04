@@ -167,50 +167,20 @@ turn-key drop-in. If you fork this, bring your own domain, keys, admin source
 IP, and — since there's no reason to reuse mine — your own admin port. None of
 the security depends on those specific values.
 
-## Deploy to Hetzner
+## Deploying
 
-One-time setup on a fresh box (Debian/Ubuntu):
-
-```sh
-# 0. Move your admin SSH off :22 BEFORE touching the firewall, so you don't
-#    lock yourself out. Edit /etc/ssh/sshd_config: `Port 2200`, `PasswordAuthentication no`.
-sudo systemctl reload ssh
-# reconnect on :2200 and confirm it works before continuing.
-
-# 1. Service user + state dir
-sudo useradd --system --home /var/lib/vieko-ssh --create-home \
-  --shell /usr/sbin/nologin vieko-ssh
-
-# 2. Firewall (redirects :22 -> :2222, rate limits, keeps :2200 for admin)
-sudo cp deploy/nftables.conf /etc/nftables.conf
-sudo systemctl enable --now nftables
-
-# 3. First deploy (builds, uploads, installs the unit, starts it)
-VIEKO_SSH_DEPLOY_HOST=root@vieko.sh VIEKO_SSH_ADMIN_PORT=2200 ./deploy/deploy.sh
-```
-
-Then point DNS `A`/`AAAA` for the `vieko.sh` apex at the box so `ssh vieko.sh`
-reaches the front door.
-
-Finally, add the **Hetzner Cloud Firewall** (network-edge layer, in front of
-nftables) so admin SSH is invisible to internet scanners:
+Everything runs on one small VPS. The files in [`deploy/`](deploy/) are
+self-documenting — the systemd unit, nftables ruleset, Hetzner Cloud Firewall
+script, and a build/upload/restart `deploy.sh` each carry header comments with
+their own steps. Day-to-day it's one command:
 
 ```sh
-hcloud context create vieko-ssh --token-from-env   # HCLOUD_TOKEN=<read-write token>
-ADMIN_SRC_V4=<your-ip>/32 ADMIN_SRC_V6=<your-ip6>/64 ./deploy/hcloud-firewall.sh
+VIEKO_SSH_DEPLOY_HOST=root@your-box ./deploy/deploy.sh
 ```
 
-This opens `:22`/`:80`/`:443` to the world and restricts `:2200` to your
-source only. `:2222` is deliberately not exposed (the front door is `:22`; the
-`:22`->`:2222` DNAT happens on the box, after the edge firewall). If your admin
-source IP changes you can always recover via the Hetzner Console (edit the
-rule) or the server's VNC Console (bypasses the network firewall).
-
-Subsequent deploys are just:
-
-```sh
-VIEKO_SSH_DEPLOY_HOST=root@vieko.sh ./deploy/deploy.sh
-```
+The one gotcha worth stating up front: **move admin SSH off `:22` and confirm
+you can reconnect on the new port _before_ applying the firewall** — otherwise
+the `:22`→`:2222` front-door redirect locks you out of admin.
 
 ## Updating content
 
